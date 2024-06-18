@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Database</title>
+    <style>
+        table,
+        th,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Add a New Movie</h1>
+    <form id="movieForm">
+        <input type="number" id="id" placeholder="Movie ID" required><br><br>
+        <input type="text" id="title" placeholder="Title" required><br><br>
+        <input type="text" id="director" placeholder="Director" required><br><br>
+        <input type="number" id="year" placeholder="Year" required><br><br>
+        <input type="number" id="length_minutes" placeholder="Length in Minutes" required><br><br>
+        <button type="submit">Add Movie</button>
+    </form>
+
+    <h2>Movie List</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Director</th>
+                <th>Year</th>
+                <th>Length (Minutes)</th>
+            </tr>
+        </thead>
+        <tbody id="movieTable">
+            <!-- Movie rows will be added here -->
+        </tbody>
+    </table>
+
+    <script>
+        document.getElementById('movieForm').addEventListener('submit', async function (event)
+        {
+            event.preventDefault();
+
+            const movieData = {
+                id: document.getElementById('id').value,
+                title: document.getElementById('title').value,
+                director: document.getElementById('director').value,
+                year: document.getElementById('year').value,
+                length_minutes: document.getElementById('length_minutes').value
+            };
+
+            try
+            {
+                const response = await fetch('http://localhost:3000/movies', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(movieData)
+                });
+
+                const result = await response.json();
+                console.log('Success:', result);
+                fetchMovies(); // Refresh the movie list
+            } catch (error)
+            {
+                console.error('Error:', error);
+            }
+        });
+
+        async function fetchMovies()
+        {
+            try
+            {
+                const response = await fetch('http://localhost:3000/movies');
+                const movies = await response.json();
+                const tableBody = document.getElementById('movieTable');
+                tableBody.innerHTML = ''; // Clear existing rows
+
+                movies.forEach(movie =>
+                {
+                    const row = `<tr>
+                                    <td>${movie.id}</td>
+                                    <td>${movie.title}</td>
+                                    <td>${movie.director}</td>
+                                    <td>${movie.year}</td>
+                                    <td>${movie.length_minutes}</td>
+                                 </tr>`;
+                    tableBody.innerHTML += row;
+                });
+            } catch (error)
+            {
+                console.error('Failed to fetch movies:', error);
+            }
+        }
+
+        // Initial fetch of movies
+        fetchMovies();
+    </script>
+</body>
+
+</html>
