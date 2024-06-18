@@ -96,6 +96,22 @@ app.post("/movies", async (req, res) => {
   }
 });
 
+// Add DELETE endpoint
+app.delete("/movies/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const pool = await connectToDatabase();
+    await pool
+      .request()
+      .input("id", sql.Int, id)
+      .query("DELETE FROM movies WHERE id = @id");
+    res.status(200).json({ message: "Movie deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting movie:", err.message);
+    res.status(500).json({ error: "Error deleting movie" });
+  }
+});
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error("Global error handler:", err);
