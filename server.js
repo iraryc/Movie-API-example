@@ -44,7 +44,7 @@ app.get("/movies", async (req, res) => {
     res.json(result.recordset);
   } catch (err) {
     console.error("Error retrieving movies:", err.message);
-    res.status(500).send("Error retrieving movies");
+    res.status(500).json({ error: "Error retrieving movies" });
   }
 });
 
@@ -58,7 +58,7 @@ app.get("/movies/title/:title", async (req, res) => {
     res.json(result.recordset);
   } catch (err) {
     console.error("Error retrieving movies by title:", err.message);
-    res.status(500).send("Error retrieving movies by title");
+    res.status(500).json({ error: "Error retrieving movies by title" });
   }
 });
 
@@ -72,7 +72,7 @@ app.get("/movies/year/:year", async (req, res) => {
     res.json(result.recordset);
   } catch (err) {
     console.error("Error retrieving movies by year:", err.message);
-    res.status(500).send("Error retrieving movies by year");
+    res.status(500).json({ error: "Error retrieving movies by year" });
   }
 });
 
@@ -89,17 +89,17 @@ app.post("/movies", async (req, res) => {
       .query(
         "INSERT INTO movies (title, director, year, length_minutes) VALUES (@title, @director, @year, @length_minutes)"
       );
-    res.status(201).send({ message: "Movie added successfully" });
+    res.status(201).json({ message: "Movie added successfully" });
   } catch (err) {
     console.error("Error adding movie:", err.message);
-    res.status(500).send("Error adding movie");
+    res.status(500).json({ error: "Error adding movie" });
   }
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err);
-  res.status(500).send("Something went wrong");
+  res.status(500).json({ error: "Something went wrong" });
 });
 
 app.listen(port, () => {
