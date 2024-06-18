@@ -1,45 +1,46 @@
 import express from "express";
 import sql from "mssql";
-import dotenv from "dotenv";
-
-dotenv.config();
+import "dotenv/config";
+import cors from "cors";
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // Middleware to parse JSON bodies
 app.use(express.json());
 
-// Database configuration
+// Middleware to enable CORS
+app.use(cors());
+
+// Database configuration using environment variables
 const config = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   server: process.env.DB_SERVER,
   database: process.env.DB_DATABASE,
   options: {
-    encrypt: true,
+    encrypt: true, // Depending on your SQL server configuration, this might need to be adjusted.
+    enableArithAbort: true,
   },
 };
 
-// Create a single connection pool instance
-const poolPromise = sql
-  .connect(config)
-  .then((pool) => {
+// Connect to the database
+async function connectToDatabase() {
+  try {
+    const pool = await sql.connect(config);
     console.log("Connected to the database");
     return pool;
-  })
-  .catch((err) => {
-    console.error("Database connection failed:", err.message);
+  } catch (err) {
+    console.error("Connection error:", err.message);
     throw err;
-  });
+  }
+}
 
-// Get all movies
+// Define API endpoints
 app.get("/movies", async (req, res) => {
   try {
-    const pool = await poolPromise;
-    const result = await pool
-      .request()
-      .query("SELECT id, title, director, year, length_minutes FROM movies");
+    const pool = await connectToDatabase();
+    const result = await pool.request().query(`SELECT * FROM movies`);
     res.json(result.recordset);
   } catch (err) {
     console.error("Error retrieving movies:", err.message);
@@ -47,16 +48,13 @@ app.get("/movies", async (req, res) => {
   }
 });
 
-// Get movies by title
 app.get("/movies/title/:title", async (req, res) => {
   try {
-    const pool = await poolPromise;
+    const pool = await connectToDatabase();
     const result = await pool
       .request()
       .input("title", sql.NVarChar, `%${req.params.title}%`)
-      .query(
-        "SELECT id, title, director, year, length_minutes FROM movies WHERE title LIKE @title"
-      );
+      .query("SELECT * FROM movies WHERE title LIKE @title");
     res.json(result.recordset);
   } catch (err) {
     console.error("Error retrieving movies by title:", err.message);
@@ -64,16 +62,13 @@ app.get("/movies/title/:title", async (req, res) => {
   }
 });
 
-// Get movies by year
 app.get("/movies/year/:year", async (req, res) => {
   try {
-    const pool = await poolPromise;
+    const pool = await connectToDatabase();
     const result = await pool
       .request()
       .input("year", sql.Int, req.params.year)
-      .query(
-        "SELECT id, title, director, year, length_minutes FROM movies WHERE year = @year"
-      );
+      .query("SELECT * FROM movies WHERE year = @year");
     res.json(result.recordset);
   } catch (err) {
     console.error("Error retrieving movies by year:", err.message);
@@ -81,28 +76,32 @@ app.get("/movies/year/:year", async (req, res) => {
   }
 });
 
-// Add a new movie
 app.post("/movies", async (req, res) => {
-  const { id, title, director, year, length_minutes } = req.body;
+  const { title, director, year, length_minutes } = req.body;
   try {
-    const pool = await poolPromise;
+    const pool = await connectToDatabase();
     await pool
       .request()
-      .input("id", sql.Int, id)
       .input("title", sql.NVarChar, title)
       .input("director", sql.NVarChar, director)
       .input("year", sql.Int, year)
       .input("length_minutes", sql.Int, length_minutes)
       .query(
-        "INSERT INTO movies (id, title, director, year, length_minutes) VALUES (@id, @title, @director, @year, @length_minutes)"
+        "INSERT INTO movies (title, director, year, length_minutes) VALUES (@title, @director, @year, @length_minutes)"
       );
-    res.status(201).send("Movie added successfully");
+    res.status(201).send({ message: "Movie added successfully" });
   } catch (err) {
     console.error("Error adding movie:", err.message);
     res.status(500).send("Error adding movie");
   }
 });
 
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).send("Something went wrong");
+});
+
 app.listen(port, () => {
-  console.log(`Movies API is running at http://localhost:${port}`);
+  console.log(`Server is running at http://localhost:${port}`);
 });
