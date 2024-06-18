@@ -91,15 +91,15 @@ app.post("/movies", async (req, res) => {
       );
     res.status(201).json({ message: "Movie added successfully" });
   } catch (err) {
-    console.error("Error adding movie:", err.message);
-    res.status(500).json({ error: "Error adding movie" });
+    console.error("Error adding movie:", err.message, err.stack); // Log full error details
+    res.status(500).json({ error: "Error adding movie", details: err.message }); // Include error details in response
   }
 });
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ error: "Something went wrong" });
+  console.error("Global error handler:", err);
+  res.status(500).json({ error: "Something went wrong", details: err.message });
 });
 
 app.listen(port, () => {
